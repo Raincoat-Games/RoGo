@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/Clan-Labs/RoGo/errs"
 )
 
 const endpoint = "https://groups.roblox.com/v1/groups/"
@@ -23,26 +27,44 @@ type Group struct {
 	MemberCount        int    `json:"memberCount"`
 	Name               string `json:"name"`
 	PublicEntryAllowed bool   `json:"publicEntryAllowed"`
-	Shout              string `json:"shout"`
-	Owner              *Owner `json:"owner"`
+	Shout              *Shout `json:"shout"`
+	Owner              *User  `json:"owner"`
 }
 
-//The Owner struct provides information about a group owner.
-type Owner struct {
+//The User struct provides information about a Roblox user.
+type User struct {
 	BuildersClubMembershipType string `json:"buildersClubMembershipType"`
 	DisplayName                string `json:"displayName"`
 	UserID                     int    `json:"userId"`
 	Username                   string `json:"username"`
 }
 
-//The Get function retrieves info about a Roblox group.
-func Get(groupId int) (*Group, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
+//The Shout struct provides information about a group shout.
+type Shout struct {
+	Content string `json:"body"`
+	Created string `json:"created"`
+	Updated string `json:"updated"`
+	Poster  *User
+}
 
+//The Get function retrieves info about a Roblox group.
+func Get(groupId int, securityToken string) (*Group, error) {
+
+	//Create cookie jar
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	//Create cookies
+	cookie := http.Cookie{Name: ".ROBLOSECURITY", Value: securityToken}
 	groupIdString := strconv.Itoa(groupId)
+	URI, _ := url.Parse(endpoint + groupIdString)
+	jar.SetCookies(URI, []*http.Cookie{&cookie})
 
 	//Create req
-	req, err := http.NewRequest("GET", endpoint+groupIdString, nil)
+	client := &http.Client{Timeout: 10 * time.Second, Jar: jar}
+	req, err := http.NewRequest("GET", URI.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +79,8 @@ func Get(groupId int) (*Group, error) {
 	//Check if exists
 	if res.StatusCode == http.StatusBadRequest {
 		return nil, ErrGroupDoesntExist
+	} else if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
+		return nil, errs.ErrUnauthorized
 	}
 
 	//Parse Response Body

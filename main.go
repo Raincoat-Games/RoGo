@@ -1,7 +1,19 @@
 package main
 
-import "github.com/Clan-Labs/RoGo/group"
+import (
+	"log"
+
+	"github.com/Clan-Labs/RoGo/group"
+)
 
 func main() {
-	_, _ = group.Get(10)
+
+	shout, err := group.GetShout(4099453, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if shout != nil {
+		println(shout.Content)
+	}
 }
