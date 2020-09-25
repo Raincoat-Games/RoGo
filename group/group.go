@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/Clan-Labs/RoGo/account"
+	"github.com/Clan-Labs/RoGo/auth"
 
 	"github.com/Clan-Labs/RoGo/errs"
 )
@@ -48,23 +49,29 @@ type Shout struct {
 }
 
 //The Get function retrieves info about a Roblox group.
-func Get(groupId int, securityToken string) (*Group, error) {
+func Get(groupId int, acc interface{}) (*Group, error) {
 
-	//Create cookie jar
-	jar, err := cookiejar.New(nil)
+	//Make endpoint
+	groupIdString := strconv.Itoa(groupId)
+	URI := endpoint + groupIdString
+
+	//Get account
+	var a *account.Account
+	if v, ok := acc.(*account.Account); ok {
+		a = v
+	} else {
+		a = account.Default
+	}
+
+	//Create Jar
+	cookieJar, err := auth.NewJar(a.SecurityCookie, endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	//Create cookies
-	cookie := http.Cookie{Name: ".ROBLOSECURITY", Value: securityToken}
-	groupIdString := strconv.Itoa(groupId)
-	URI, _ := url.Parse(endpoint + groupIdString)
-	jar.SetCookies(URI, []*http.Cookie{&cookie})
-
 	//Create req
-	client := &http.Client{Timeout: 10 * time.Second, Jar: jar}
-	req, err := http.NewRequest("GET", URI.String(), nil)
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+	req, err := http.NewRequest("GET", URI, nil)
 	if err != nil {
 		return nil, err
 	}
