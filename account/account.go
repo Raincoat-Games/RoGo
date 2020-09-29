@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -9,12 +10,14 @@ type Account struct {
 	SecurityCookie *http.Cookie
 }
 
-//Default is a blank Account
-var Default = New("")
+func (a Account) IsAuthenticated() bool {
+	return fmt.Sprint(a.SecurityCookie) != ".ROBLOSECURITY="
+}
 
 //New creates a new Account
-func New(securityCookie string) *Account {
-	cookie := http.Cookie{Name: ".ROBLOSECURITY", Value: securityCookie}
+func New(securityCookie interface{}) *Account {
+	if securityCookie == nil { securityCookie = "" }
+	cookie := http.Cookie{Name: ".ROBLOSECURITY", Value: securityCookie.(string)}
 	acc := Account{SecurityCookie: &cookie}
 	return &acc
 }

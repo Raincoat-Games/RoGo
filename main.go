@@ -1,35 +1,20 @@
 package main
 
 import (
-	"log"
-
+	"fmt"
 	"github.com/Clan-Labs/RoGo/account"
-
 	"github.com/Clan-Labs/RoGo/group"
+	"log"
 )
 
 func main() {
-
-	acc := account.New("_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_BC04756AB1F0AC67BD7696F3827B686AD72700089E58D2C6BE16D0D86444699F65E31C29F9ACB8D644832E1F08698EFF5E7766C50CC5B4CBAB4A3E79A8D073362D422084774AE06BED2398A6D2D9FCE230F55510BBBBE525E6EA358916C7AA8BC29C1C826FFE70052155E787D134E8C4CC5D9773649742F18CE1E7AD5FA88F7F5C1652C33B1B3BBBE26BA3F43246E47DA30255737BB9571963055B1D92BAB39B54EA6BD88DCB59B0824C58102BEB545890BFEA2300FA7AD48D0D2B8D502AA74613F5ECB89AB66035DBFB8366A72323ED8E7C9091E7FD5B3E792AC99FF21C0F26BF2493FCAAE3AC826BC5C830FC4A5B2DDA2CCAB634707F878ACA3C7A9224D3427B051BB59E979CFEE4B76062938988C9DCD1B57EC33AA4EB38FBC62FD4C2B0ACC3389194ABEA6152F5E7EE3D277D3E5C1728296E")
-
-	//Check initial shout
-	shout, err := group.GetShout(4953490, acc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	println(shout.Content)
-
-	//Change shout
-	err = group.PostShout("[ENTRY] Join our communication server to get accepted into the group - /yxHDRfS", 4953490, acc)
-	if err != nil {
-		log.Fatal("SHOUTERR "+err.Error())
-	}
-
-	//Check shout
-	shout, err = group.GetShout(4953490, acc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	println(shout.Content)
-
+	acc := account.New(nil)
+	g, err := group.Get(4953490, acc)
+	fmt.Println(acc.SecurityCookie)
+	if err != nil { log.Fatal(err.Error()) }
+	//err = g.PostShout("[ENTRY] Join our communication server to get accepted into SCAR - /yxHDRfS")
+	//if err != nil { log.Fatal(err.Error()) }
+	shout, err := g.GetShout()
+	if err != nil { log.Fatal(err.Error()) }
+	fmt.Println(shout.Poster.UserID)
 }
