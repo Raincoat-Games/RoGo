@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	requests "github.com/Clan-Labs/RoGo/helpers"
 	"net/http"
 	"time"
 
@@ -31,40 +32,25 @@ var postShoutEndpoint = "https://groups.roblox.com/v1/groups/%v/status"
 
 //The PostShout function posts a group shout.
 func PostShout(shout string, groupId int, acc *account.Account) error {
-
 	endpoint := fmt.Sprintf(postShoutEndpoint, groupId)
-
-	//Create Jar
-	cookieJar, err := auth.NewJar(acc.SecurityCookie, endpoint)
+	cookieJar, err := auth.NewJar(acc.SecurityCookie, endpoint) // Create JAR
 	if err != nil {
 		return err
 	}
-
 	type reqBody struct {
 		Message string `json:"message"`
 	}
-
-	//Marshal body
 	reqB := reqBody{Message: shout}
-	bodyJson, err := json.Marshal(reqB)
+	bodyJson, err := json.Marshal(reqB) // Create & marshal body
 	if err != nil {
 		return err
 	}
 
 	//Create req
 	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
-	req, err := http.NewRequest("PATCH", endpoint, bytes.NewReader(bodyJson))
-	if err != nil {
-		return err
-	}
-
-	//Get XCSRF
-	csrf, err := auth.GetCSRF(acc)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-CSRF-TOKEN", csrf)
+	// Create an authorized request
+	req, err := requests.NewAuthorizedRequest(acc, endpoint, "PATCH", bytes.NewReader(bodyJson))
+	if err != nil { return err }
 
 	//Send Request
 	res, err := client.Do(req)
@@ -73,9 +59,12 @@ func PostShout(shout string, groupId int, acc *account.Account) error {
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	//Check for errors
-	if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
+	// Check errors
+	if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden  { // roblox returns 400 for unauthorized apparently?
 		return errs.ErrUnauthorized
+	}
+	if res.StatusCode == http.StatusBadRequest {
+		return errs.ErrBadRequest
 	}
 
 	return nil
