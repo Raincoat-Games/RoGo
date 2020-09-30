@@ -12,7 +12,7 @@ func main() {
 	g, err := group.Get(4953490, acc)
 	fmt.Println(acc.SecurityCookie)
 	if err != nil { log.Fatal(err.Error()) }
-	//err = g.PostShout("[ENTRY] Join our communication server to get accepted into SCAR - /yxHDRfS")
+	//err = g.PostShout("[ENTRY] Join our communication server to get accepted into SCAR")
 	//if err != nil { log.Fatal(err.Error()) }
 	shout, err := g.GetShout()
 	if err != nil { log.Fatal(err.Error()) }
