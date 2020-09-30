@@ -8,6 +8,7 @@ import (
 	"fmt"
 	requests "github.com/Clan-Labs/RoGo/helpers"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -20,38 +21,11 @@ import (
 const endpoint = "https://groups.roblox.com/v1/groups/"
 
 var (
+	ErrRankNotFound = errors.New("role is over 255 or does not exist")
+	ErrRequiresCookie = errors.New("this endpoint requires a valid cookie")
 	ErrGroupDoesntExist = errors.New("group doesn't exist")
+	ErrNonOkStatus = errors.New("response status was not 200") // Only use for endpoints that normally return 200
 )
-
-//The Group struct provides information about a Roblox group.
-type Group struct {
-	Description        string `json:"description"`
-	Id                 int    `json:"id"`
-	IsBuildersClubOnly bool   `json:"isBuildersClubOnly"`
-	MemberCount        int    `json:"memberCount"`
-	Name               string `json:"name"`
-	PublicEntryAllowed bool   `json:"publicEntryAllowed"`
-	Shout              *Shout `json:"shout"`
-	Owner              *User  `json:"owner"`
-
-	BotAccount          *account.Account `json:"-"` // Don't encode account
-}
-
-//The User struct provides information about a Roblox user.
-type User struct {
-	BuildersClubMembershipType string `json:"buildersClubMembershipType"`
-	DisplayName                string `json:"displayName"`
-	UserID                     int    `json:"userId"`
-	Username                   string `json:"username"`
-}
-
-//The Shout struct provides information about a group shout.
-type Shout struct {
-	Content string `json:"body"`
-	Created string `json:"created"`
-	Updated string `json:"updated"`
-	Poster  *User
-}
 
 func (c Group) PostShout(shout string) error {
 	var postShoutEndpoint = "https://groups.roblox.com/v1/groups/%v/status"
@@ -95,6 +69,120 @@ func (c Group) PostShout(shout string) error {
 
 	return nil
 }
+
+func (c Group) GetGroupRoles() ([]Role, error) {
+	var endpoint = fmt.Sprintf("https://groups.roblox.com/v1/groups/%v/roles", c.Id)
+	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, endpoint) // Create JAR
+	if err != nil { return nil, err }
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil { return nil, err }
+
+	res, err := client.Do(req)
+
+	if err != nil { return nil, err }
+
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK { return nil,
+		errors.New(fmt.Sprintf("unexpected status code recieved `%v`",
+			res.StatusCode))
+	}
+
+	var roles GroupRoles
+	err = json.NewDecoder(res.Body).Decode(&roles) // Decode into struct
+	if err != nil { return nil, err }
+	sort.Slice(roles.Roles, func(i, j int) bool { return roles.Roles[i].Rank < roles.Roles[j].Rank } )
+	// ^ Sort roles, roblox sometimes returns them unsorted
+	return roles.Roles, nil // Return roles
+}
+
+func (c Group) GetRoleInGroup(id int) (Role, error) {
+	var endpoint = fmt.Sprintf("https://groups.roblox.com/v1/users/%v/groups/roles", id)
+	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, endpoint) // Create JAR
+	if err != nil { return Role{}, err }
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil { return Role{}, err }
+
+	res, err := client.Do(req)
+
+	if err != nil { return Role{}, err }
+
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK { return Role{},
+		errors.New(fmt.Sprintf("unexpected status code recieved `%v`",
+			res.StatusCode))
+	}
+
+	var jsonRes UserGroupData
+	err = json.NewDecoder(res.Body).Decode(&jsonRes)
+	if err != nil { return Role{}, err }
+
+	var role Role
+	for _, d := range jsonRes.Data {
+		if d.RobloxGroup.Id == c.Id {
+			role = d.RobloxRole
+		}
+	}
+	return role, nil
+}
+
+func (c Group) ChangeRank(UserId int, Change int) (Role, Role, error) {
+	if !c.BotAccount.IsAuthenticated() { return Role{}, Role{}, errors.New("this endpoint requires a valid cookie") }
+	roles, err := c.GetGroupRoles()
+	if err != nil { return Role{}, Role{}, err }
+	role, err := c.GetRoleInGroup(UserId)
+	if err != nil { return Role{}, Role{}, err }
+	userRole := -1
+	for _, r := range roles {
+		userRole += 1
+		if r.Id == role.Id { break }
+	}
+	newUserRole := userRole + Change
+	if len(roles) < newUserRole || roles[newUserRole].Rank == 255 {
+		return Role{}, Role{}, ErrRankNotFound
+	}
+	err = c.SetRank(UserId, roles[newUserRole].Id)
+	if err != nil { return Role{}, Role{}, err }
+	return role, roles[newUserRole], nil
+ }
+
+ func (c Group) SetRank(UserID, Id int) error {
+	 if !c.BotAccount.IsAuthenticated() { return ErrRequiresCookie }
+	 endpoint := fmt.Sprintf("https://groups.roblox.com/v1/groups/%v/users/%v", c.Id, UserID)
+	 // Check if account was provided
+	 if !c.BotAccount.IsAuthenticated() { return ErrRequiresCookie }
+	 cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, endpoint) // Create JAR
+
+ 	type reqBody struct { RoleId int `json:"roleId"` }
+ 	data := reqBody{RoleId: Id}
+ 	bodyJson, err := json.Marshal(data) // Create & marshal body
+
+ 	if err != nil {
+		 return err
+ 	}
+
+ 	//Create req
+
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+	// Create an authorized request
+	req, err := requests.NewAuthorizedRequest(c.BotAccount, endpoint, "PATCH", bytes.NewReader(bodyJson))
+	if err != nil { return err }
+
+	//Send Request
+	res, err := client.Do(req)
+	if err != nil { return err }
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		return ErrNonOkStatus
+	}
+ 	return nil
+ }
 
 func (c Group) GetShout() (*Shout, error) {
 	//Check if unauthorized
