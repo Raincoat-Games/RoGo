@@ -2,8 +2,11 @@
 package group
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	requests "github.com/Clan-Labs/RoGo/helpers"
 	"net/http"
 	"strconv"
 	"time"
@@ -30,6 +33,8 @@ type Group struct {
 	PublicEntryAllowed bool   `json:"publicEntryAllowed"`
 	Shout              *Shout `json:"shout"`
 	Owner              *User  `json:"owner"`
+
+	BotAccount          *account.Account `json:"-"` // Don't encode account
 }
 
 //The User struct provides information about a Roblox user.
@@ -48,23 +53,68 @@ type Shout struct {
 	Poster  *User
 }
 
+func (c Group) PostShout(shout string) error {
+	var postShoutEndpoint = "https://groups.roblox.com/v1/groups/%v/status"
+	endpoint := fmt.Sprintf(postShoutEndpoint, c.Id)
+	// Check if account was provided
+	if !c.BotAccount.IsAuthenticated() { return errors.New("this endpoint requires a valid cookie") }
+	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, endpoint) // Create JAR
+	if err != nil {
+		return err
+	}
+
+	type reqBody struct {
+		Message string `json:"message"`
+	}
+
+	reqB := reqBody{Message: shout}
+	bodyJson, err := json.Marshal(reqB) // Create & marshal body
+	if err != nil {
+		return err
+	}
+
+	//Create req
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+	// Create an authorized request
+	req, err := requests.NewAuthorizedRequest(c.BotAccount, endpoint, "PATCH", bytes.NewReader(bodyJson))
+	if err != nil { return err }
+
+	//Send Request
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	// Check errors
+	if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden  { // roblox returns 400 for unauthorized apparently?
+		return errs.ErrUnauthorized
+	} else if res.StatusCode == http.StatusBadRequest {
+		return errs.ErrBadRequest
+	}
+
+	return nil
+}
+
+func (c Group) GetShout() (*Shout, error) {
+	//Check if unauthorized
+	if c.Shout == nil {
+		return nil, errs.ErrUnauthorized
+	}
+	return c.Shout, nil
+}
+
 //The Get function retrieves info about a Roblox group.
-func Get(groupId int, acc interface{}) (*Group, error) {
+func Get(groupId int, acc *account.Account) (*Group, error) {
 
 	//Make endpoint
 	groupIdString := strconv.Itoa(groupId)
 	URI := endpoint + groupIdString
 
 	//Get account
-	var a *account.Account
-	if v, ok := acc.(*account.Account); ok {
-		a = v
-	} else {
-		a = account.Default
-	}
-
+	if acc == nil { acc = account.New("") }
 	//Create Jar
-	cookieJar, err := auth.NewJar(a.SecurityCookie, endpoint)
+	cookieJar, err := auth.NewJar(acc.SecurityCookie, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +143,7 @@ func Get(groupId int, acc interface{}) (*Group, error) {
 	//Parse Response Body
 	var group *Group
 	err = json.NewDecoder(res.Body).Decode(&group)
+	group.BotAccount = acc
 	if err != nil {
 		return nil, err
 	}
