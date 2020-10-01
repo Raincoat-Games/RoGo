@@ -13,7 +13,7 @@ type Group struct {
 	Shout              *Shout `json:"shout"`
 	Owner              *User  `json:"owner"`
 
-	BotAccount          *account.Account `json:"-"` // Don't encode account
+	BotAccount *account.Account `json:"-"` // Don't encode account
 }
 
 //The User struct provides information about a Roblox user.
@@ -26,29 +26,29 @@ type User struct {
 
 //The Shout struct provides information about a group shout.
 type Shout struct {
-	Content string `json:"body"`
-	Created string `json:"created"`
-	Updated string `json:"updated"`
-	Poster  *User
+	Content 		string `json:"body"`
+	Created 		string `json:"created"`
+	Updated 		string `json:"updated"`
+	Poster  		*User
 }
 
-type GroupRoles struct {
-	GroupId int `json:"groupId"`
-	Roles []Role `json:"roles"`
+type Roles struct {
+	GroupId 		int `json:"groupId"`
+	Roles   		[]Role `json:"roles"`
 }
 
 type Role struct {
-	Id int `json:"id"`
-	Name string `json:"name"`
-	Rank int `json:"rank"`
-	MemberCount int `json:"memberCount"`
+	Id          	int    `json:"id"`
+	Name        	string `json:"name"`
+	Rank        	int    `json:"rank"`
+	MemberCount 	int    `json:"memberCount"`
 }
 
 type RobloxGroupData struct {
-	RobloxGroup Group `json:"group"`
-	RobloxRole Role `json:"role"`
+	RobloxGroup 	Group `json:"group"`
+	RobloxRole  	Role  `json:"role"`
 }
 
 type UserGroupData struct {
-	Data []RobloxGroupData `json:"data"`
+	Data 			[]RobloxGroupData `json:"data"`
 }
