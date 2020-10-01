@@ -8,13 +8,8 @@ import (
 )
 
 func main() {
-	acc := account.New(nil)
+	acc := account.New("")
 	g, err := group.Get(4953490, acc)
-	fmt.Println(acc.SecurityCookie)
 	if err != nil { log.Fatal(err.Error()) }
-	//err = g.PostShout("[ENTRY] Join our communication server to get accepted into SCAR")
-	//if err != nil { log.Fatal(err.Error()) }
-	shout, err := g.GetShout()
-	if err != nil { log.Fatal(err.Error()) }
-	fmt.Println(shout.Poster.UserID)
 }
+
