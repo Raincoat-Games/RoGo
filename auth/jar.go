@@ -10,15 +10,11 @@ import (
 func NewJar(securityCookie *http.Cookie, endpoint string) (*cookiejar.Jar, error) {
 	//Create cookie jar
 	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 
 	//Parse URL
 	URI, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 
 	//Create cookies
 	jar.SetCookies(URI, []*http.Cookie{securityCookie})
