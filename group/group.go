@@ -146,10 +146,22 @@ func (c Group) ChangeRank(UserId int, Change int) (Role, Role, error) {
 	return role, roles[newUserRole], nil
 }
 
+func (c Group)Promote(UserID int) (Role, Role, error) {
+	if !c.BotAccount.IsAuthenticated() { return Role{}, Role{}, errs.ErrRequiresCookie }
+	old, curr, err := c.ChangeRank(UserID, 1)
+	if err != nil { return Role{}, Role{}, err }
+	return old, curr, nil
+}
+
+func (c Group)Demote(UserID int) (Role, Role, error) {
+	if !c.BotAccount.IsAuthenticated() { return Role{}, Role{}, errs.ErrRequiresCookie }
+	old, curr, err := c.ChangeRank(UserID, -1)
+	if err != nil { return Role{}, Role{}, err }
+	return old, curr, nil
+}
+
 func (c Group) SetRank(UserID, Id int) error {
-	if !c.BotAccount.IsAuthenticated() {
-		return errs.ErrRequiresCookie
-	}
+	if !c.BotAccount.IsAuthenticated() { return errs.ErrRequiresCookie }
 	endpoint := fmt.Sprintf("https://groups.roblox.com/v1/groups/%v/users/%v", c.Id, UserID)
 	// Check if account was provided
 	if !c.BotAccount.IsAuthenticated() {
