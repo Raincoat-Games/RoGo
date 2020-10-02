@@ -25,25 +25,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="af18687c-44af-4dac-a6e1-90e63c28b29d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/RoGo.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/account/account.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth/jar.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth/xcsrf.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bench.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/errs/common.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/group/group.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/group/types.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/requests.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/main_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,6 +72,27 @@
       <recent name="C:\Users\Esquire\Desktop\Pogram\Opensource\RoGo\examples" />
     </key>
   </component>
+  <component name="RunManager">
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="RoGo" />
+      <working_directory value="$PROJECT_DIR$" />
+      <go_parameters value="-i" />
+      <kind value="FILE" />
+      <filePath value="$PROJECT_DIR$" />
+      <directory value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="RoGo" />
+      <working_directory value="$PROJECT_DIR$" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
@@ -101,6 +107,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />

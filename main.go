@@ -9,23 +9,9 @@ import (
 )
 
 func main() {
-	SimpleGroupInfo()
-	AuthenticatedGroupFuncs()
-}
-
-
-func SimpleGroupInfo() {
-	acc := account.New(nil)
-	g, err := group.Get(5, acc)
-	if err != nil { log.Fatal(err.Error()) }
-	fmt.Printf("GROUP NAME: '%s'\nGROUP DESC: '%s'\n", g.Name, g.Description)
-}
-
-func AuthenticatedGroupFuncs() {
 	acc := account.New(os.Getenv("COOKIE"))
-	g, err := group.Get(4953490, acc)
+	g, _ := group.Get(4953490, acc)
+	old, new, err := g.Demote(1505886708)
 	if err != nil { log.Fatal(err.Error()) }
-	old, curr, err := g.ChangeRank(1505886708, -1)
-	if err != nil { log.Fatal(err.Error()) }
-	fmt.Printf("The user has been demoted from `%s` to `%s`\n", old.Name, curr.Name)
+	fmt.Printf("Demoted from %s to %s", old.Name, new.Name)
 }
