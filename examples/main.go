@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"github.com/Clan-Labs/RoGo/account"
 	"github.com/Clan-Labs/RoGo/group"
+	"github.com/jpfuentes2/go-env"
 	"log"
 	"os"
 )
 
 func main() {
+	err := env.ReadEnv("./env")
+	if err != nil { log.Fatal(err.Error()) }
 	SimpleGroupInfo()
 	AuthenticatedGroupFuncs()
 }
