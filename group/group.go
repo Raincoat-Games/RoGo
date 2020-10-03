@@ -258,12 +258,11 @@ func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
 	}
 
 	go func() {
-		var cursor *string = new(string)
+		var cursor string
 		for {
 			NewURI := URI
-			if cursor == nil { break }
-			if *cursor != "" {
-				NewURI += "?cursor="+*cursor
+			if cursor != "" {
+				NewURI += "?cursor="+cursor
 			}
 			req, err := requests.NewAuthorizedRequest(c.BotAccount, NewURI, "GET", bytes.NewReader(jsonBody))
 			if err != nil { errch <- err; break }
@@ -278,11 +277,12 @@ func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
 			if err != nil { errch <- err; break }
 			for i := range data.Data { data.Data[i].Group = &c } // _, range copies the items, which means a lot of null pointers, so change by index
 			ch <- data.Data
-			cursor = data.Cursor
+			if data.Cursor == nil { break }
+			cursor = *data.Cursor
 			res.Body.Close()
 		}
-		close(ch)
-		close(errch)
+		close(ch) // With these channels, you should be cautious to check that the channel is still open
+		close(errch) // I literally spent 3 hours debugging the error channel to realise it was because the default value of an interface is nil (nil pointer dereference)
 	}()
 	return ch, errch, nil
 }
