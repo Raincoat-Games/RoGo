@@ -237,3 +237,60 @@ func Get(groupId int, acc *account.Account) (*Group, error) {
 
 	return group, nil
 }
+
+func (c Group) GetJoinRequests() ([]JoinRequest, error){
+	URI := fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/", c.Id)
+	if !c.BotAccount.IsAuthenticated() { return nil, errs.ErrRequiresCookie }
+	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, URI) // Create JAR
+	if err != nil { return nil, err }
+
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+	type EmptyBody struct {}
+	jsonBody, err := json.Marshal(EmptyBody{})
+	if err != nil { return nil, err }
+
+	req, err := requests.NewAuthorizedRequest(c.BotAccount, URI, "GET", bytes.NewReader(jsonBody))
+	if err != nil { return nil, err }
+
+	res, err := client.Do(req)
+	if err != nil { return nil, err }
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("unexpected status code '%d'", res.StatusCode))
+	}
+
+	defer func() { _ = res.Body.Close() }()
+
+	type JoinRequests struct {
+		Data []JoinRequest
+	}
+	var data JoinRequests
+	err = json.NewDecoder(res.Body).Decode(&data)
+	if err != nil { return nil, nil }
+	for i := range data.Data { data.Data[i].Group = &c } // _, range copies the items, which means a lot of null pointers, so change by index
+	return data.Data, nil
+}
+
+func (c Group) Exile(UserID int) error {
+	URI := fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/users/%d", c.Id, UserID)
+	if !c.BotAccount.IsAuthenticated() { return errs.ErrRequiresCookie }
+	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, URI) // Create JAR
+	if err != nil { return err }
+
+	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
+	type EmptyBody struct {}
+	jsonBody, err := json.Marshal(EmptyBody{})
+	if err != nil { return err }
+
+	req, err := requests.NewAuthorizedRequest(c.BotAccount, URI, "DELETE", bytes.NewReader(jsonBody))
+	if err != nil { return err }
+
+	res, err := client.Do(req)
+	if err != nil { return err }
+
+	defer func() { res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("unexpected status code '%d'", res.StatusCode))
+	}
+	return nil
+}
