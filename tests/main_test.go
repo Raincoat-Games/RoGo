@@ -21,10 +21,20 @@ func TestMain(m *testing.M) {
 	if err != nil { log.Fatal(err.Error()) }
 	//err = g.Exile(1505886708)
 	//if err != nil { log.Fatal(err.Error()) }
-	r, err := g.GetJoinRequests(1)
+	r, errch, err := g.GetJoinRequests()
 	if err != nil { log.Fatal(err.Error()) }
-	for _, i := range r {
-		fmt.Printf("Username: %s\nUserID: %d\nCreated: %v\n\n", i.Requester.Username, i.Requester.UserID, i.Created)
+	for {
+		select {
+		case err := <-errch:
+			log.Fatal(err.Error())
+		case res, ok := <- r:
+			if !ok {
+				fmt.Println("Channel has been closed")
+				return
+			}
+			for _, v := range res {
+				fmt.Println(v.Requester.Username)
+			}
+		}
 	}
-
 }
