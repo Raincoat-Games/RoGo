@@ -25,10 +25,14 @@ func TestMain(m *testing.M) {
 	if err != nil { log.Fatal(err.Error()) }
 	for {
 		select {
-		case err := <-errch:
-			log.Fatal(err.Error())
-		case res, ok := <- r:
-			if !ok {
+		case err, open := <-errch:
+			if !open {
+				fmt.Println("Error Channel has been closed")
+				return
+			}
+			fmt.Println(err.Error())
+		case res, open := <- r:
+			if !open {
 				fmt.Println("Channel has been closed")
 				return
 			}
