@@ -265,7 +265,7 @@ func (c Group) GetJoinRequests() ([]JoinRequest, error){
 	}
 	var data JoinRequests
 	err = json.NewDecoder(res.Body).Decode(&data)
-	if err != nil { return nil, nil }
+	if err != nil { return nil, err }
 	for i := range data.Data { data.Data[i].Group = &c } // _, range copies the items, which means a lot of null pointers, so change by index
 	return data.Data, nil
 }
