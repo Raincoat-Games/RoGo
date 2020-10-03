@@ -284,7 +284,6 @@ func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
 		close(ch)
 		close(errch)
 	}()
-
 	return ch, errch, nil
 }
 
