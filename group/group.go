@@ -238,36 +238,53 @@ func Get(groupId int, acc *account.Account) (*Group, error) {
 	return group, nil
 }
 
-func (c Group) GetJoinRequests() ([]JoinRequest, error){
+func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
 	URI := fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/", c.Id)
-	if !c.BotAccount.IsAuthenticated() { return nil, errs.ErrRequiresCookie }
+	if !c.BotAccount.IsAuthenticated() { return nil, nil, errs.ErrRequiresCookie }
 	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, URI) // Create JAR
-	if err != nil { return nil, err }
+	if err != nil { return nil, nil, err }
 
 	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
 	type EmptyBody struct {}
 	jsonBody, err := json.Marshal(EmptyBody{})
-	if err != nil { return nil, err }
+	if err != nil { return nil, nil, err }
 
-	req, err := requests.NewAuthorizedRequest(c.BotAccount, URI, "GET", bytes.NewReader(jsonBody))
-	if err != nil { return nil, err }
-
-	res, err := client.Do(req)
-	if err != nil { return nil, err }
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("unexpected status code '%d'", res.StatusCode))
-	}
-
-	defer func() { _ = res.Body.Close() }()
+	ch := make(chan []JoinRequest, 1)
+	errch := make(chan error, 1)
 
 	type JoinRequests struct {
 		Data []JoinRequest
+		Cursor *string `json:"nextPageCursor"` // Pointers can be nil, and we iterate through the pages until its null
 	}
-	var data JoinRequests
-	err = json.NewDecoder(res.Body).Decode(&data)
-	if err != nil { return nil, err }
-	for i := range data.Data { data.Data[i].Group = &c } // _, range copies the items, which means a lot of null pointers, so change by index
-	return data.Data, nil
+
+	go func() {
+		var cursor *string = new(string)
+		for {
+			NewURI := URI
+			if cursor == nil { break }
+			if *cursor != "" {
+				NewURI += "?cursor="+*cursor
+			}
+			req, err := requests.NewAuthorizedRequest(c.BotAccount, NewURI, "GET", bytes.NewReader(jsonBody))
+			if err != nil { errch <- err; break }
+			res, err := client.Do(req)
+			if err != nil { errch <- err; break }
+			if res.StatusCode != http.StatusOK {
+				errch <- errors.New(fmt.Sprintf("unexpected status code '%d'", res.StatusCode))
+				break
+			}
+			var data JoinRequests
+			err = json.NewDecoder(res.Body).Decode(&data)
+			if err != nil { errch <- err; break }
+			for i := range data.Data { data.Data[i].Group = &c } // _, range copies the items, which means a lot of null pointers, so change by index
+			ch <- data.Data
+			cursor = data.Cursor
+			res.Body.Close()
+		}
+		close(ch)
+		close(errch)
+	}()
+	return ch, errch, nil
 }
 
 func (c Group) Exile(UserID int) error {
