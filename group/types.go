@@ -1,6 +1,9 @@
 package group
 
-import "github.com/Clan-Labs/RoGo/account"
+import (
+	"github.com/Clan-Labs/RoGo/account"
+	"time"
+)
 
 //The Group struct provides information about a Roblox group.
 type Group struct {
@@ -32,11 +35,14 @@ type Shout struct {
 	Poster  		*User
 }
 
+// Roles represents the response given by GetGroupRoles
 type Roles struct {
 	GroupId 		int `json:"groupId"`
 	Roles   		[]Role `json:"roles"`
 }
 
+
+// Role represents an item in Roles
 type Role struct {
 	Id          	int    `json:"id"`
 	Name        	string `json:"name"`
@@ -44,11 +50,29 @@ type Role struct {
 	MemberCount 	int    `json:"memberCount"`
 }
 
+// Represents a user's Role in a Group
 type RobloxGroupData struct {
 	RobloxGroup 	Group `json:"group"`
 	RobloxRole  	Role  `json:"role"`
 }
 
+// UserGroupData represents the Groups a user is in, see RobloxGroupData
 type UserGroupData struct {
 	Data 			[]RobloxGroupData `json:"data"`
 }
+
+// Requester represents a subsection of a JoinRequest
+type Requester struct {
+	Username string `json:"username"`
+	DisplayName string `json:"displayName"`
+	UserID int `json:"userId"`
+}
+
+// JoinRequest represents a user who is pending to join a group
+type JoinRequest struct {
+	Group *Group
+	Created time.Time `json:"created"`
+	Requester Requester `json:"requester"`
+}
+
+
