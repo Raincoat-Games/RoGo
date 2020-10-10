@@ -75,4 +75,18 @@ type JoinRequest struct {
 	Requester Requester `json:"requester"`
 }
 
+type InteriorPost struct {
+	User User `json:"user"`
+	Role Role `json:"role"`
+}
+
+type GroupPost struct {
+	Id int `json:"id"`
+	Poster InteriorPost `json:"poster"`
+	Body string `json:"body"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
+	Group *Group
+}
+
 

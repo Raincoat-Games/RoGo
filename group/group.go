@@ -238,7 +238,7 @@ func Get(groupId int, acc *account.Account) (*Group, error) {
 	return group, nil
 }
 
-func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
+func (c Group) GetJoinRequests(limit ...int) (<-chan []JoinRequest, <-chan error,  error){
 	URI := fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/", c.Id)
 	if !c.BotAccount.IsAuthenticated() { return nil, nil, errs.ErrRequiresCookie }
 	cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, URI) // Create JAR
@@ -256,10 +256,15 @@ func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
 		Data []JoinRequest
 		Cursor *string `json:"nextPageCursor"` // Pointers can be nil, and we iterate through the pages until its null
 	}
+	var curPage int
+	var reqLimit int
+	if len(limit) == 0 { reqLimit = -1
+	} else { reqLimit = limit[0] }
 
 	go func() {
 		var cursor string
 		for {
+			if curPage == reqLimit { break }
 			NewURI := URI
 			if cursor != "" {
 				NewURI += "?cursor="+cursor
@@ -280,6 +285,7 @@ func (c Group) GetJoinRequests() (<-chan []JoinRequest, <-chan error,  error){
 			if data.Cursor == nil { break }
 			cursor = *data.Cursor
 			res.Body.Close()
+			curPage += 1
 		}
 		close(ch) // With these channels, you should be cautious to check that the channel is still open
 		close(errch) // I literally spent 3 hours debugging the error channel to realise it was because the default value of an interface is nil (nil pointer dereference)
@@ -310,4 +316,62 @@ func (c Group) Exile(UserID int) error {
 		return errors.New(fmt.Sprintf("unexpected status code '%d'", res.StatusCode))
 	}
 	return nil
+}
+
+func (c Group) GetGroupPosts(limit ...int) (<-chan []GroupPost, <-chan error,  error){
+	URI := fmt.Sprintf("https://groups.roblox.com/v2/groups/%v/wall/posts?limit=100&sortOrder=Desc", c.Id)
+	//cookieJar, err := auth.NewJar(c.BotAccount.SecurityCookie, URI) // Create JAR
+	//if err != nil { return nil, nil, err }
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	ch := make(chan []GroupPost, 1)
+	errch := make(chan error, 1)
+
+	type GroupPosts struct {
+		Data []GroupPost
+		Cursor *string `json:"nextPageCursor"` // Pointers can be nil, and we iterate through the pages until its null
+	}
+
+	var curPage int
+	var reqLimit int
+	if len(limit) == 0 { reqLimit = -1
+	} else { reqLimit = limit[0] }
+
+	go func() {
+		var cursor string
+		for {
+			if curPage == reqLimit { break }
+			NewURI := URI
+			if cursor != "" {
+				NewURI += "?cursor="+cursor
+			}
+			//req, err := requests.NewAuthorizedRequest(c.BotAccount, NewURI, "GET", bytes.NewReader(jsonBody))
+			req, err := http.NewRequest("GET", NewURI, bytes.NewReader([]byte{}))
+			if err != nil { errch <- err; break }
+			res, err := client.Do(req)
+			if err != nil { errch <- err; break }
+			if res.StatusCode == http.StatusForbidden {
+				var errBody map[string]interface{}
+				err = json.NewDecoder(res.Body).Decode(&errBody)
+				if err != nil { errch <- err; return }
+				errch <- errors.New(errBody["errors"].([]interface{})[0].(map[string]interface{})["userFacingMessage"].(string))
+			} else if res.StatusCode != http.StatusOK {
+					errch <- errors.New(fmt.Sprintf("unexpected status code '%d'", res.StatusCode))
+				break
+			}
+			var data GroupPosts
+			err = json.NewDecoder(res.Body).Decode(&data)
+			if err != nil { errch <- err; break }
+			for i := range data.Data { data.Data[i].Group = &c } // _, range copies the items, which means a lot of null pointers, so change by index
+			ch <- data.Data
+			if data.Cursor == nil { break }
+			cursor = *data.Cursor
+			res.Body.Close()
+			curPage += 1
+		}
+		close(ch) // With these channels, you should be cautious to check that the channel is still open
+		close(errch)
+	}()
+	return ch, errch, nil
 }
