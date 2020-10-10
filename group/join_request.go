@@ -13,8 +13,9 @@ import (
 )
 
 func interiorAccept(r JoinRequest, group *Group) error {
+	URI := fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/users/%d", group.Id, r.Requester.UserID)
 	if !group.BotAccount.IsAuthenticated() { return errs.ErrRequiresCookie }
-	cookieJar, err := auth.NewJar(group.BotAccount.SecurityCookie, endpoint) // Create JAR
+	cookieJar, err := auth.NewJar(group.BotAccount.SecurityCookie, URI) // Create JAR
 	if err != nil { return err }
 	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
 
@@ -23,8 +24,7 @@ func interiorAccept(r JoinRequest, group *Group) error {
 	if err != nil { return err }
 
 	req, err := requests.NewAuthorizedRequest(group.BotAccount,
-		fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/users/%d", group.Id, r.Requester.UserID),
-		"POST", bytes.NewReader(jsonBody)) // Helper func for dealing with XCSRF
+		URI, "POST", bytes.NewReader(jsonBody)) // Helper func for dealing with XCSRF
 
 	if err != nil { return err }
 
@@ -37,8 +37,9 @@ func interiorAccept(r JoinRequest, group *Group) error {
 }
 
 func interiorDecline(r JoinRequest, group *Group) error {
+	URI := fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/users/%d", group.Id, r.Requester.UserID)
 	if !group.BotAccount.IsAuthenticated() { return errs.ErrRequiresCookie }
-	cookieJar, err := auth.NewJar(group.BotAccount.SecurityCookie, endpoint) // Create JAR
+	cookieJar, err := auth.NewJar(group.BotAccount.SecurityCookie, URI) // Create JAR
 	if err != nil { return err }
 	client := &http.Client{Timeout: 10 * time.Second, Jar: cookieJar}
 
@@ -47,8 +48,7 @@ func interiorDecline(r JoinRequest, group *Group) error {
 	if err != nil { return err }
 
 	req, err := requests.NewAuthorizedRequest(group.BotAccount,
-		fmt.Sprintf("https://groups.roblox.com/v1/groups/%d/join-requests/users/%d", group.Id, r.Requester.UserID),
-		"DELETE", bytes.NewReader(jsonBody)) // Helper func for dealing with XCSRF
+		URI,"DELETE", bytes.NewReader(jsonBody)) // Helper func for dealing with XCSRF
 
 	if err != nil { return err }
 
