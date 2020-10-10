@@ -11,7 +11,7 @@ import (
 )
 
 func(u User) GetRankInGroups() ([]group.RobloxGroupData, error) {
-	URI := fmt.Sprintf("https://groups.roblox.com/v1/users/1/groups/roles")
+	URI := fmt.Sprintf("https://groups.roblox.com/v1/users/%v/groups/roles", u.UserId)
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", URI, bytes.NewReader([]byte{}))
 	if err != nil { return nil, err }
