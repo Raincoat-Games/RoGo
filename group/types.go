@@ -2,6 +2,7 @@ package group
 
 import (
 	"github.com/Clan-Labs/RoGo/account"
+	"github.com/Clan-Labs/RoGo/user"
 	"time"
 )
 
@@ -14,17 +15,9 @@ type Group struct {
 	Name               string `json:"name"`
 	PublicEntryAllowed bool   `json:"publicEntryAllowed"`
 	Shout              *Shout `json:"shout"`
-	Owner              *User  `json:"owner"`
+	Owner              *user.User  `json:"owner"`
 
 	BotAccount *account.Account `json:"-"` // Don't encode account
-}
-
-//The User struct provides information about a Roblox user.
-type User struct {
-	BuildersClubMembershipType string `json:"buildersClubMembershipType"`
-	DisplayName                string `json:"displayName"`
-	UserID                     int    `json:"userId"`
-	Username                   string `json:"username"`
 }
 
 //The Shout struct provides information about a group shout.
@@ -32,17 +25,11 @@ type Shout struct {
 	Content 		string `json:"body"`
 	Created 		string `json:"created"`
 	Updated 		string `json:"updated"`
-	Poster  		*User
-}
-
-// Roles represents the response given by GetGroupRoles
-type Roles struct {
-	GroupId 		int `json:"groupId"`
-	Roles   		[]Role `json:"roles"`
+	Poster  		*user.User
 }
 
 
-// Role represents an item in Roles
+// Role represents a Group Role
 type Role struct {
 	Id          	int    `json:"id"`
 	Name        	string `json:"name"`
@@ -50,15 +37,10 @@ type Role struct {
 	MemberCount 	int    `json:"memberCount"`
 }
 
-// Represents a user's Role in a Group
-type RobloxGroupData struct {
+// UserGroupRelation represents a user's Role in a Group
+type UserGroupRelation struct {
 	RobloxGroup 	Group `json:"group"`
 	RobloxRole  	Role  `json:"role"`
-}
-
-// UserGroupData represents the Groups a user is in, see RobloxGroupData
-type UserGroupData struct {
-	Data 			[]RobloxGroupData `json:"data"`
 }
 
 // Requester represents a subsection of a JoinRequest
@@ -73,6 +55,22 @@ type JoinRequest struct {
 	Group *Group
 	Created time.Time `json:"created"`
 	Requester Requester `json:"requester"`
+}
+
+// interiorPost is the struct that allows for User and Role to be embedded in Post
+type interiorPost struct {
+	User user.User `json:"user"`
+	Role Role `json:"role"`
+}
+
+// Post is the decoded value of a Post on a group wall
+type Post struct {
+	Id int `json:"id"`
+	Poster interiorPost `json:"poster"`
+	Body string `json:"body"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
+	Group *Group
 }
 
 
