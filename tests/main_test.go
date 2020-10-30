@@ -28,6 +28,12 @@ func TestMain(m *testing.M) {
 	u, err := user.NewUserFromID(171029413)
 	if err != nil { log.Fatal(err.Error()) }
 	fmt.Println(u.Created.Format(time.RFC822Z))
+	fmt.Println(u.Status)
+	roles, err := u.GetRolesInGroups()
+	if err != nil { log.Fatal(err.Error()) }
+	for _, role := range roles {
+		fmt.Println(role.RobloxRole.Name)
+	}
 	//err = g.Exile(1505886708)
 	//if err != nil {
 	//	log.Fatal(err.Error())
